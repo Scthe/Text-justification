@@ -33,3 +33,8 @@
 .greyish{
   color: #9e9e9e;
 }
+
+.monospaced{
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+}
