@@ -15,10 +15,102 @@
     <link rel="stylesheet" href="css/style.css">
   </head>
   <body>
-    <div id="app">
-      <h2>Figwheel template</h2>
-      <p>Checkout your developer console.</p>
+    <!-- <div id="app"> -->
+      <!-- <h2>Figwheel template</h2> -->
+      <!-- <p>Checkout your developer console.</p> -->
+    <!-- </div> -->
+
+    <div class="container">
+
+      <!-- title -->
+      <section class="margin-bottom-huge margin-top-huge">
+        <h2 class="center">Text justification</h2>
+        <h5 class="center">(using dynamic programming)</h5>
+      </section>
+
+      <!-- settings -->
+      <section class="row margin-bottom-huge">
+        <label for="page-width" class="non-selectable greyish">Text width</label>
+        <p class="range-field relative margin-bottom-mid one-half column margin-left-none" style="float:none !important">
+          <input id="page-width" type="range" min="40" max="120" value="40">
+        </p>
+
+        <p class="margin-bottom-none">
+          <input id="preserve-paragraphs" type="checkbox" checked class="off-screen">
+          <label for="preserve-paragraphs" class="non-selectable greyish">
+            Preserve paragraphs
+          <label>
+        </p>
+      </section>
+
+      <!-- texts -->
+      <section class="row">
+        <div class="one-half column">
+          <h4>Text</h4>
+          <p>This index.html page is a placeholder with the CSS, font and favicon. It's just waiting for you to add some content! If you need some help hit up the <a href="http://www.getskeleton.com">Skeleton documentation</a>.</p>
+          <textarea class="u-full-width u-max-full-width" placeholder="Hi Dave …" id="text"></textarea>
+        </div>
+
+        <div class="one-half column">
+          <h4>Text justified</h4>
+          <p>This index.html page is a placeholder with the CSS, font and favicon. It's just waiting for you to add some content! If you need some help hit up the <a href="http://www.getskeleton.com">Skeleton documentation</a>.</p>
+        </div>
+      </section>
     </div>
-    <script src="js/compiled/text_justification.js" type="text/javascript"></script>
+
+    <!-- <script src="js/compiled/text_justification.js" type="text/javascript"></script> -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script>
+      var range_type = 'input[type=range]';
+      var range_wrapper = '.range-field';
+      var range_mousedown = false;
+
+      $(range_type).each(function () {
+        var thumb = $('<span class="thumb"><span class="value center"></span></span>');
+        $(this).after(thumb);
+      });
+
+      $(document).on("mousedown", range_wrapper, function(e) {
+        var thumb = $(this).children('.thumb');
+        if (thumb.length <= 0) {
+          thumb = $('<span class="thumb"><span class="value center"></span></span>');
+          $(this).append(thumb);
+        }
+        range_mousedown = true;
+        $(this).addClass('active');
+        var left = e.pageX - $(this).offset().left;
+        var width = $(this).outerWidth();
+        left = Math.min(Math.max(0,left), width);
+        thumb.addClass('active').css('left', left);
+        thumb.find('.value').html($(this).children('input[type=range]').val());
+      });
+
+      $(document).on("mouseup", range_wrapper, function() {
+        range_mousedown = false;
+        $(this).removeClass('active');
+        // console.log("> "+$(this).children('input[type=range]').val());
+      });
+
+      $(document).on("mousemove", range_wrapper, function(e) {
+        var thumb = $(this).children('.thumb');
+        if (range_mousedown) {
+          var left = e.pageX - $(this).offset().left,
+           width = $(this).outerWidth(),
+           value = $(this).children('input[type=range]').val();
+          // console.log(value);
+          left = Math.min(Math.max(0,left), width);
+          thumb.addClass('active').css('left', left);
+          thumb.find('.value').html(value);
+        }
+      });
+
+      $(document).on("mouseout", range_wrapper, function() {
+        if (!range_mousedown) {
+          var thumb = $(this).children('.thumb');
+          thumb.removeClass('active');
+        }
+      });
+    </script>
+
   </body>
 </html>
