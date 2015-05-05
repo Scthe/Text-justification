@@ -1,11 +1,12 @@
 (ns ^:figwheel-always text-justification.core
     (:require [reagent.core :as reagent :refer [atom]]
-              [goog.dom :as dom]))
+              [goog.dom :as dom]
+              [goog.string :as gstring]))
 
 (enable-console-print!)
 
-(defonce text-id "text")
 (defonce page-width 11)
+(defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 (defonce target-el (dom/getElement "justified-text"))
 
 (defn get-text-el []
@@ -47,14 +48,14 @@
     spaces_per_break_f (float (/ chars_left (dec str_len)))
     spaces_per_break_i (int spaces_per_break_f)
     extra_space_every_X_words (/ 1 (- spaces_per_break_f spaces_per_break_i))]
-    ; (if (> char_count max_width)
+    ; (if (> char_count max_width) ;; TODO restore this
       ; (throw (Exception. "Could not stretch string, it is already too long")))
     (second (reduce (fn [acc e] ;; run reduce and take second component
       (let [ word_id (first acc) res (second acc)
         space_count (if (>= word_id str_len) 0 ;; last word TODO add some padding here if needed -> (test ["b" "l" "e" "h"] 11)
           (+ spaces_per_break_i
             (if (== (mod word_id extra_space_every_X_words) 0) 1 0))) ;; add extra space every X words
-        spaces (apply str (repeat space_count "_"))]
+        spaces (apply str (repeat space_count space-char))]
         [(inc word_id) (str res e spaces)]))
       [1 ""] line))
 ))
@@ -62,17 +63,20 @@
 
 (defn execute []
   (.log js/console "Execute !!!")
-  (set! (.-innerHtml target-el) "") ;; clear
+  (dom/removeChildren target-el)
+
   (let [strs (seq (.split (get-text) #" "))
     justified_lines (second (text_justification strs page-width))]
-    ; (print justified_lines)
+    ;;(print ">>" justified_lines)
+    ;;(print "<<" strs)
     (doseq [line_strs justified_lines]
       (let [line (stretch_string line_strs page-width)
         el (.createElement js/document "div")]
         (println "line:" line)
         (.appendChild target-el el)
         (set! (.-innerText el) line)
-        ))))
+        )))
+  )
 
 
 ;; remove listeners from text area
@@ -81,15 +85,18 @@
   )
 
 ;; add keyup listner to text-el
- (.addEventListener (get-text-el) "keyup" (fn []
+ (.addEventListener (get-text-el) "keyup" (fn [] ;; TODO only characters, not f.e. arrows
   (execute)
   ))
 
-
+(execute)
 
 
 
 (comment
+
+
+
 (defn render-query [results]
   (str
     "<ul>"
