@@ -6,12 +6,13 @@
 
 (defonce text-id "text")
 (defonce page-width 11)
-(defonce text-el (dom/getElement "text"))
 (defonce target-el (dom/getElement "justified-text"))
-(println target-el)
+
+(defn get-text-el []
+  (dom/getElement "text"))
 
 (defn get-text "get text to justify as string" []
-  (.-value text-el))
+  (.-value (get-text-el)))
 
 ; (.log js/console (.-value (dom/getElement "text")))
 (.log js/console (get-text))
@@ -58,21 +59,34 @@
       [1 ""] line))
 ))
 
-;; clear
-(set! (.-innerHtml target-el) "")
 
-(let [strs (seq (.split (get-text) #" "))
-  justified_lines (second (text_justification strs page-width))]
-  ; (print justified_lines)
-  (doseq [line_strs justified_lines]
-    (let [line (stretch_string line_strs page-width)
-      el (.createElement js/document "div")]
-      (println "line:" line)
-      (.appendChild target-el el)
-      (set! (.-innerText el) line)
-      )
-    )
+(defn execute []
+  (.log js/console "Execute !!!")
+  (set! (.-innerHtml target-el) "") ;; clear
+  (let [strs (seq (.split (get-text) #" "))
+    justified_lines (second (text_justification strs page-width))]
+    ; (print justified_lines)
+    (doseq [line_strs justified_lines]
+      (let [line (stretch_string line_strs page-width)
+        el (.createElement js/document "div")]
+        (println "line:" line)
+        (.appendChild target-el el)
+        (set! (.-innerText el) line)
+        ))))
+
+
+;; remove listeners from text area
+(let [ old-node (get-text-el) new-node (.cloneNode old-node true)]
+  (.replaceChild (.-parentNode old-node) new-node old-node)
   )
+
+;; add keyup listner to text-el
+ (.addEventListener (get-text-el) "keyup" (fn []
+  (execute)
+  ))
+
+
+
 
 
 (comment
