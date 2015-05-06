@@ -9,7 +9,6 @@
 
 (defonce page-width 11)
 (defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
-(defonce target-el (dom/getElement "justified-text"))
 
 (defn get-text-el []
   (dom/getElement "text"))
@@ -52,10 +51,6 @@
 ;; remove listeners from text area
 (let [ old-node (get-text-el) new-node (.cloneNode old-node true)]
   (.replaceChild (.-parentNode old-node) new-node old-node)
-  ; (set! (.-value new-node) "Bleh Bleh Bleh Bleh aaabbbccc\n\naaa bbb")
-  ; (set! (.-value new-node) "")
-  ; (set! (.-value new-node) "aaabbbccc111 a")
-  ; (set! (.-value new-node) "aaabbbccc11 -1 a")
   )
 
 ;; add keyup listner to text-el
@@ -77,7 +72,7 @@
 
 
 (defn text-justified-component []
-  [:p
+  [:div
   (for [[id line] (map-indexed vector @model/state)]
     ^{:key id} [line-component id line])])
 
