@@ -14,7 +14,7 @@
   (let [word (gstring/trim word-raw) len (count word)]
     (cond
       (<= max-len 0) word
-      (= len 0) invisible-char
+      (zero? len) invisible-char
       (<= len max-len) word
       :else [(.substring word 0 max-len) (str " -" (prepare-word max-len (.substring word max-len)))]
     )))

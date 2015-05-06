@@ -8,7 +8,8 @@
 (enable-console-print!)
 
 (defonce page-width 11)
-(defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
+; (defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
+(defonce space-char "_") ;; \u00A0 ?
 (defonce target-el (dom/getElement "justified-text"))
 
 (defn get-text-el []
@@ -17,48 +18,52 @@
 (defn get-text "get text to justify as string" []
   (.-value (get-text-el)))
 
-; (.log js/console (.-value (dom/getElement "text")))
 ; (.log js/console (get-text))
 
 
-(defn stretch_string [line max_width]
-  (let [str_len (count line)
-        char_count (utils/sum-lengths line) ;; total characters in provided string
-        chars_left (- max_width char_count) ;; chars left in line
-        spaces_per_break_f (float (/ chars_left (dec str_len)))
-        spaces_per_break_i (int spaces_per_break_f)
-        extra_space_every_X_words (/ 1 (- spaces_per_break_f spaces_per_break_i))]
-    ; (if (> char_count max_width) ;; TODO restore this
+(defn stretch-string
+  "provide word separators between words so that line spans from beginning to end"
+  [line max-width]
+  (let [word-count (count line)
+        char-count (utils/sum-lengths line) ;; total characters in provided string
+        chars-left (- max-width char-count) ;; chars left in line
+        spaces-per-break-f (float (/ chars-left (dec word-count)))
+        spaces-per-break-i (int spaces-per-break-f)
+        extra-space-every-X-words (/ 1 (- spaces-per-break-f spaces-per-break-i))]
+    ; (if (> char-count max-width) ;; TODO restore this
       ; (throw (Exception. "Could not stretch string, it is already too long")))
-    (second (reduce (fn [acc e] ;; run reduce and take second component
-      (let [ word_id (first acc) res (second acc)
-        space_count (if (>= word_id str_len) 0 ;; last word TODO add some padding here if needed -> (test ["b" "l" "e" "h"] 11)
-          (+ spaces_per_break_i
-            (if (== (mod word_id extra_space_every_X_words) 0) 1 0))) ;; add extra space every X words
-        spaces (apply str (repeat space_count space-char))]
-        [(inc word_id) (str res e spaces)]))
-      [1 ""] line))
-))
+    (second
+      (reduce
+        (fn [[word-id res] word](
+          let[space-count
+                (cond
+                  (>= word-id word-count) 0 ; happens for last word
+                  (= word-id (dec word-count)) (- max-width (count res) (count word) (count (last line)))
+                  (zero? (mod word-id extra-space-every-X-words)) (inc spaces-per-break-i) ; add one more space the usual
+                  :else spaces-per-break-i)
+              spaces (apply str (repeat space-count space-char))]
+             ; (println word "(" (= word-id (dec word-count)) "):" max-width "-" (count res) "-" (count word))
+            [(inc word-id) (str res word spaces)]))
+        [1 ""]
+        line)) ))
+; (let [test (stretch-string ["b" "l" "e" "ah"] 15)]
+  ; (println "len" (count test) "; " test))
 
-
-(defn execute [target-el lazy-text page-width]
-  ;; clear target text
-  (dom/removeChildren target-el)
-
+(defn execute
+  "Justify provided text and write it to target element"
+  [target-el text page-width]
+  (dom/removeChildren target-el) ; clear target text
   ;; paragraphs
-  (doseq [paragraph (seq (.split (lazy-text) "\n"))] ;; TODO if paragraph is empty ? should leave it empty
+  (doseq [paragraph (seq (.split (text) "\n"))]
     (println "PARAGRAPH:" paragraph)
     (let [words-raw  (.split paragraph #" ")
           lines (model/text-justification words-raw page-width)]
       (doseq [line lines]
-        (let [line-formatted (stretch_string line page-width)
-          el (.createElement js/document "div")]
+        (let [line-formatted (stretch-string line page-width)
+              el (.createElement js/document "div")]
           ; (println "line:" line-formatted)
           (.appendChild target-el el)
-          (set! (.-innerText el) line-formatted)
-          )))
-    )
-  )
+          (set! (.-innerText el) line-formatted) )) )))
 
 
 ;; remove listeners from text area
