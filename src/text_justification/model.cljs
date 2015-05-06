@@ -5,10 +5,29 @@
 
 (enable-console-print!)
 
-(defonce state (atom []))
+
+;;;;
+;;;; consts
+;;;;
 (defonce invisible-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
 
+;;;;
+;;;; state
+;;;;
+(defonce state (atom []))
+
+(defn- set-state [new-state]
+  (swap! state (fn [] new-state)))
+(defn- clear-state [] (set-state []))
+(defn- update-state [new-lines]
+  (set-state (concat @state new-lines)))
+  ; (println "new state" @state))
+
+
+;;;;
+;;;; implementation
+;;;;
 (defn- prepare-word
   "remove whitespaces, split word if it is too long"
   [max-len word-raw]
@@ -48,15 +67,28 @@
       [js/Infinity []]
       (map inc (range (count words))) )))
 
-(defn- set-state [new-state]
-  (swap! state (fn [] new-state)))
+(defn- prepare-text
+  "split by paragraphs or treat text as single text flow"
+  [text separate-paragraphs]
+  (if separate-paragraphs
+    (seq (.split text "\n"))
+    [(clojure.string/replace text #"\n" "")]
+    ))
 
-;; TODO this should receive whole text !
+
+;;;;
+;;;; public interface
+;;;;
 (defn text-justification
   "justify text provided as a collection of words to given page width"
-  [words-raw page-width]
+  [text separate-paragraphs page-width]
   {:pre [(> page-width 0)]}
-  (set-state (second
-    (text-justification-inner
-     (vec (flatten (map #(prepare-word page-width %) words-raw)))
-     page-width) )))
+  (clear-state)
+  (doseq [paragraph (prepare-text text separate-paragraphs)]
+    ; (println "PARAGRAPH:" paragraph)
+    (let [words-raw (.split paragraph #" ")
+          words (vec (flatten (map #(prepare-word page-width %) words-raw)))]
+        ; (println "words:" words)
+        (update-state (second (text-justification-inner words page-width) ))
+      )
+  ))
