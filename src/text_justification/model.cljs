@@ -1,14 +1,12 @@
 (ns ^:figwheel-always text-justification.model
     (:require [reagent.core :as reagent :refer [atom]]
-              [goog.string :as gstring]))
+              [goog.string :as gstring]
+              [text-justification.utils :as utils]))
 
 (enable-console-print!)
 
 (defonce invisible-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
-;;
-;; utils
-;;
 
 (defn prepare-word
   "remove whitespaces, split word if it is too long"
@@ -18,40 +16,22 @@
       (<= max-len 0) word
       (= len 0) invisible-char
       (<= len max-len) word
-      :else [(.substring word 0 max-len) (str " -" (prepare-word max-len (.substring word max-len)))] ;; TODO return list and then flatten
+      :else [(.substring word 0 max-len) (str " -" (prepare-word max-len (.substring word max-len)))]
     )))
 ; (println "norm:" (prepare-word 3 "abc"))
 ; (println "trim:" (prepare-word 3 "  abc  "))
 ; (println "long:" (prepare-word 2 "abc"))
 ; (println "test:" (prepare-word 11 "aaabbbccc111"))
 
-
-(defn exp
-  "power: x^n"
-  [x n]
-  (reduce * (repeat n x)))
-
-(defn sum-lengths
-  "given iterable returns sum of lengths of all elements"
-  [line]
-  (reduce (fn [acc e] (+ acc (count e))) 0 line))
-
-
-
-;;
-;; main
-;;
-
-
 ;; TODO make functions private
 
 (defn badness
   "given line and page width and returns measurement how `pretty` the line is"
   [line page_width]
-  (let [total_length (sum-lengths line)] ;; TODO also add all spaces - they count to length as well
+  (let [total_length (utils/line-length line)]
     (if (> total_length page_width)
       js/Infinity
-      (exp (- page_width total_length) 3))))
+      (utils/exp (- page_width total_length) 3))))
 
 (defn text_justification
   "given words to fit and page width returns vector of `pretty` measurement and vector of justified lines"

@@ -2,7 +2,8 @@
     (:require [reagent.core :as reagent :refer [atom]]
               [goog.dom :as dom]
               [goog.string :as gstring]
-              [text-justification.model :as model]))
+              [text-justification.model :as model]
+              [text-justification.utils :as utils]))
 
 (enable-console-print!)
 
@@ -22,7 +23,7 @@
 
 (defn stretch_string [line max_width]
   (let [str_len (count line)
-        char_count (model/sum-lengths line) ;; total characters in provided string
+        char_count (utils/sum-lengths line) ;; total characters in provided string
         chars_left (- max_width char_count) ;; chars left in line
         spaces_per_break_f (float (/ chars_left (dec str_len)))
         spaces_per_break_i (int spaces_per_break_f)
