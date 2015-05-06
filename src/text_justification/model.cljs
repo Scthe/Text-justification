@@ -25,32 +25,34 @@
 
 (defn- badness
   "given line and page width and returns measurement how `pretty` the line is"
-  [line page_width]
-  (let [total_length (utils/line-length line)]
-    (if (> total_length page_width)
+  [line page-width]
+  (let [total-length (utils/line-length line)]
+    (if (> total-length page-width)
       js/Infinity
-      (utils/exp (- page_width total_length) 3))))
+      (utils/exp (- page-width total-length) 3))))
 
-(defn- text_justification
+(defn- text-justification-inner
   "given words to fit and page width returns vector of `pretty` measurement and vector of justified lines"
-  [words page_width]
+  [words page-width]
   (if (empty? words)
     [0.0 []]
-    (reduce ( fn
-      [acc word_id]
-      (let [line (subvec words 0 word_id) rest_words (subvec words word_id)
-            sub_problem_solution (text_justification rest_words page_width)
-            ugliness (+ (badness line page_width) (first sub_problem_solution))
-            solution_proposal (cons line (second sub_problem_solution))]
-        ; (print "sub" line "|words in line" (count words))
-        (if (< ugliness (first acc)) [ugliness solution_proposal] acc)))
+    (reduce
+      (fn [acc word-id]
+         (let [line (subvec words 0 word-id) rest-words (subvec words word-id)
+               sub-problem-solution (text-justification-inner rest-words page-width)
+               ugliness (+ (badness line page-width) (first sub-problem-solution))
+               solution-proposal (cons line (second sub-problem-solution))]
+          ; (print "sub" line "|words in line" (count words))
+          (if (< ugliness (first acc)) [ugliness solution-proposal] acc)))
       [js/Infinity []]
       (map inc (range (count words))) )))
 
-(defn execute
-  ""
+(defn text-justification
+  "justify text provided as a collection of words to given page width"
   [words-raw page-width]
-  (let [words (vec (flatten (map #(prepare-word page-width %) words-raw)))
-        ; justified_lines words] ;; debug
-        [_ justified_lines] (text_justification words page-width)]
-        justified_lines))
+  {:pre [(> page-width 0)]}
+  (second
+    (text-justification-inner
+     (vec (flatten (map #(prepare-word page-width %) words-raw)))
+     page-width)
+    ))

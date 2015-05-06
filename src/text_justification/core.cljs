@@ -49,7 +49,7 @@
   (doseq [paragraph (seq (.split (lazy-text) "\n"))] ;; TODO if paragraph is empty ? should leave it empty
     (println "PARAGRAPH:" paragraph)
     (let [words-raw  (.split paragraph #" ")
-          lines (model/execute words-raw page-width)]
+          lines (model/text-justification words-raw page-width)]
       (doseq [line lines]
         (let [line-formatted (stretch_string line page-width)
           el (.createElement js/document "div")]
