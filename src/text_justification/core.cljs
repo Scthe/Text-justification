@@ -52,18 +52,22 @@
 (defn execute
   "Justify provided text and write it to target element"
   [target-el text page-width]
-  (dom/removeChildren target-el) ; clear target text
+  ; (dom/removeChildren target-el) ; clear target text
   ;; paragraphs
   (doseq [paragraph (seq (.split (text) "\n"))]
     (println "PARAGRAPH:" paragraph)
     (let [words-raw  (.split paragraph #" ")
           lines (model/text-justification words-raw page-width)]
+          1
+(comment
       (doseq [line lines]
         (let [line-formatted (stretch-string line page-width)
               el (.createElement js/document "div")]
           ; (println "line:" line-formatted)
           (.appendChild target-el el)
-          (set! (.-innerText el) line-formatted) )) )))
+          (set! (.-innerText el) line-formatted) ))
+)
+           )))
 
 
 ;; remove listeners from text area
@@ -80,45 +84,26 @@
   ))
 
 (execute target-el get-text page-width)
+; (println model/state)
 
+(defonce text-state (atom ["line1" "line2" "--end--"]))
 
-(comment
+(defn line-component [id line]
+  [:div.monospaced id ": " line])
 
+; (defn text-justified-component []
+  ; [:p.monospaced
+  ; (for [line @text-state] [line-component line])])
 
+(defn text-justified-component []
+  [:p
+  ; (for [[id line] (map-indexed vector @text-state)]
+  (for [[id line] (map-indexed vector @model/state)]
+    ^{:key id} [line-component id line])])
 
-(defn render-query [results]
-  (str
-    "<ul>"
-    (apply str
-      (for [result results]
-        (str "<li>" result "</li>")))
-    "</ul>"))
+(reagent/render-component [text-justified-component]
+                          (. js/document (getElementById "justified-text")))
 
-(let [strs (seq (.split (get-text) #" "))
-  justified_lines (second (text_justification strs page-width))]
-  ; (print justified_lines)
-  (doseq [line_strs justified_lines]
-    ; (println line_strs)
-    ; (let [ll [:span "hi"]]
-      ; (.appendChild target-el ll)
-      ; )
-    (set! (.-innerHTML results-view) (render-query results))
-  (let [ul (render-query line_strs)]
-   (println ul) )
-    )
-  ))
-
-(comment
-;; define your app data so that it doesn't get over-written on reload
-
-(defonce app-state (atom {:text "Hello world!"}))
-
-(defn hello-world []
-  [:h1 (:text @app-state)])
-
-
-(reagent/render-component [hello-world]
-                          (. js/document (getElementById "app")))
 
 
 ; (defn on-js-reload []
@@ -126,4 +111,3 @@
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
 ; ) 
-)

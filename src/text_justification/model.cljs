@@ -5,6 +5,7 @@
 
 (enable-console-print!)
 
+(defonce state (atom []))
 (defonce invisible-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
 
@@ -47,12 +48,15 @@
       [js/Infinity []]
       (map inc (range (count words))) )))
 
+(defn- set-state [new-state]
+  (swap! state (fn [] new-state)))
+
+;; TODO this should receive whole text !
 (defn text-justification
   "justify text provided as a collection of words to given page width"
   [words-raw page-width]
   {:pre [(> page-width 0)]}
-  (second
+  (set-state (second
     (text-justification-inner
      (vec (flatten (map #(prepare-word page-width %) words-raw)))
-     page-width)
-    ))
+     page-width) )))
