@@ -33,15 +33,18 @@
   [max-len word-raw]
   (let [word (gstring/trim word-raw) len (count word)]
     (cond
-      (<= max-len 0) word
-      (zero? len) invisible-char
-      (<= len max-len) word
-      :else [(.substring word 0 max-len) (str " -" (prepare-word max-len (.substring word max-len)))]
-    )))
-; (println "norm:" (prepare-word 3 "abc"))
-; (println "trim:" (prepare-word 3 "  abc  "))
-; (println "long:" (prepare-word 2 "abc"))
-; (println "test:" (prepare-word 11 "aaabbbccc111"))
+      (<= max-len 0) [word]
+      (zero? len) [invisible-char]
+      (<= len max-len) [word]
+      :else (concat
+          [(.substring word 0 max-len)]
+          (prepare-word max-len (str " -" (.substring word max-len)))) )))
+; (defn prepare-word-test [str]
+  ; (let [res (prepare-word 11 str)]
+    ; (println "test(" (count res) ")" res)))
+; (prepare-word-test "aaabbbccc111")
+; (prepare-word-test "aaabbbccc111aaabbbccc111")
+; (prepare-word-test "aaabbbccc111aaabbbccc111aaabbbccc111")
 
 (defn- badness
   "given line and page width and returns measurement how `pretty` the line is"
@@ -87,8 +90,10 @@
   (doseq [paragraph (prepare-text text separate-paragraphs)]
     ; (println "PARAGRAPH:" paragraph)
     (let [words-raw (.split paragraph #" ")
-          words (vec (flatten (map #(prepare-word page-width %) words-raw)))]
-        ; (println "words:" words)
-        (update-state (second (text-justification-inner words page-width) ))
+          words (vec (flatten (map #(prepare-word page-width %) words-raw)))
+          [_ justified-line] (text-justification-inner words page-width)]
+        ; (.log js/console "words" (count words) ":" words)
+        ; (.log js/console "state" (count justified-line) ":" justified-line)
+        (update-state justified-line)
       )
   ))
