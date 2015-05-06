@@ -8,7 +8,7 @@
 (defonce invisible-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
 
-(defn prepare-word
+(defn- prepare-word
   "remove whitespaces, split word if it is too long"
   [max-len word-raw]
   (let [word (gstring/trim word-raw) len (count word)]
@@ -23,9 +23,7 @@
 ; (println "long:" (prepare-word 2 "abc"))
 ; (println "test:" (prepare-word 11 "aaabbbccc111"))
 
-;; TODO make functions private
-
-(defn badness
+(defn- badness
   "given line and page width and returns measurement how `pretty` the line is"
   [line page_width]
   (let [total_length (utils/line-length line)]
@@ -33,7 +31,7 @@
       js/Infinity
       (utils/exp (- page_width total_length) 3))))
 
-(defn text_justification
+(defn- text_justification
   "given words to fit and page width returns vector of `pretty` measurement and vector of justified lines"
   [words page_width]
   (if (empty? words)
