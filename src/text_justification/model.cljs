@@ -1,12 +1,10 @@
 (ns ^:figwheel-always text-justification.model
     (:require [reagent.core :as reagent :refer [atom]]
-              [goog.dom :as dom] ;; TODO remove
               [goog.string :as gstring]))
 
 (enable-console-print!)
 
-;; TODO move to view
-(defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
+(defonce invisible-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
 ;;
 ;; utils
@@ -18,9 +16,8 @@
   (let [word (gstring/trim word-raw) len (count word)]
     (cond
       (<= max-len 0) word
-      (= len 0) space-char
+      (= len 0) invisible-char
       (<= len max-len) word
-      ;;:else (str (.substring word 0 max-len) " _" (prepare-word max-len (.substring word max-len)))) ;; TODO return list and then flatten
       :else [(.substring word 0 max-len) (str " -" (prepare-word max-len (.substring word max-len)))] ;; TODO return list and then flatten
     )))
 ; (println "norm:" (prepare-word 3 "abc"))
@@ -49,15 +46,15 @@
 ;; TODO make functions private
 
 (defn badness
-  "given line and page width and returns measurement how `preety` the line is"
+  "given line and page width and returns measurement how `pretty` the line is"
   [line page_width]
-  (let [total_length (sum-lengths line)]
+  (let [total_length (sum-lengths line)] ;; TODO also add all spaces - they count to length as well
     (if (> total_length page_width)
       js/Infinity
       (exp (- page_width total_length) 3))))
 
 (defn text_justification
-  "given words to fit and page width returns vector of `preety` measurement and vector of justified lines"
+  "given words to fit and page width returns vector of `pretty` measurement and vector of justified lines"
   [words page_width]
   (if (empty? words)
     [0.0 []]
@@ -72,46 +69,10 @@
       [js/Infinity []]
       (map inc (range (count words))) )))
 
-;; TODO remove stretch_string from here - it is view related function
-(defn stretch_string [line max_width]
-  (let [str_len (count line)
-        char_count (sum-lengths line) ;; total characters in provided string
-        chars_left (- max_width char_count) ;; chars left in line
-        spaces_per_break_f (float (/ chars_left (dec str_len)))
-        spaces_per_break_i (int spaces_per_break_f)
-        extra_space_every_X_words (/ 1 (- spaces_per_break_f spaces_per_break_i))]
-    ; (if (> char_count max_width) ;; TODO restore this
-      ; (throw (Exception. "Could not stretch string, it is already too long")))
-    (second (reduce (fn [acc e] ;; run reduce and take second component
-      (let [ word_id (first acc) res (second acc)
-        space_count (if (>= word_id str_len) 0 ;; last word TODO add some padding here if needed -> (test ["b" "l" "e" "h"] 11)
-          (+ spaces_per_break_i
-            (if (== (mod word_id extra_space_every_X_words) 0) 1 0))) ;; add extra space every X words
-        spaces (apply str (repeat space_count space-char))]
-        [(inc word_id) (str res e spaces)]))
-      [1 ""] line))
-))
-
-(defn execute [target-el lazy-text page-width]
-  ;; clear target text
-  (dom/removeChildren target-el)
-
-  ;; paragraphs
-  (doseq [paragraph (seq (.split (lazy-text) "\n"))] ;; TODO if paragraph is empty ? should leave it empty
-    (println "PARAGRAPH:" paragraph)
-    (let [words-raw  (.split paragraph #" ")
-          words (vec (flatten (map #(prepare-word page-width %) words-raw)))
-          ; justified_lines words] ;; debug
-          [_ justified_lines] (text_justification words page-width)]
-      ; (print ">>" words)
-      ; (print "<<" justified_lines)
-      ; (print (type words))
-      (doseq [line_strs justified_lines] ;; TODO do not create view here
-        (let [line (stretch_string line_strs page-width)
-          el (.createElement js/document "div")]
-          ; (println "line:" line)
-          (.appendChild target-el el)
-          (set! (.-innerText el) line)
-          )))
-    )
-  )
+(defn execute
+  ""
+  [words-raw page-width]
+  (let [words (vec (flatten (map #(prepare-word page-width %) words-raw)))
+        ; justified_lines words] ;; debug
+        [_ justified_lines] (text_justification words page-width)]
+        justified_lines))

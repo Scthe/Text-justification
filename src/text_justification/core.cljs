@@ -7,6 +7,7 @@
 (enable-console-print!)
 
 (defonce page-width 11)
+(defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 (defonce target-el (dom/getElement "justified-text"))
 
 (defn get-text-el []
@@ -19,7 +20,44 @@
 ; (.log js/console (get-text))
 
 
+(defn stretch_string [line max_width]
+  (let [str_len (count line)
+        char_count (model/sum-lengths line) ;; total characters in provided string
+        chars_left (- max_width char_count) ;; chars left in line
+        spaces_per_break_f (float (/ chars_left (dec str_len)))
+        spaces_per_break_i (int spaces_per_break_f)
+        extra_space_every_X_words (/ 1 (- spaces_per_break_f spaces_per_break_i))]
+    ; (if (> char_count max_width) ;; TODO restore this
+      ; (throw (Exception. "Could not stretch string, it is already too long")))
+    (second (reduce (fn [acc e] ;; run reduce and take second component
+      (let [ word_id (first acc) res (second acc)
+        space_count (if (>= word_id str_len) 0 ;; last word TODO add some padding here if needed -> (test ["b" "l" "e" "h"] 11)
+          (+ spaces_per_break_i
+            (if (== (mod word_id extra_space_every_X_words) 0) 1 0))) ;; add extra space every X words
+        spaces (apply str (repeat space_count space-char))]
+        [(inc word_id) (str res e spaces)]))
+      [1 ""] line))
+))
 
+
+(defn execute [target-el lazy-text page-width]
+  ;; clear target text
+  (dom/removeChildren target-el)
+
+  ;; paragraphs
+  (doseq [paragraph (seq (.split (lazy-text) "\n"))] ;; TODO if paragraph is empty ? should leave it empty
+    (println "PARAGRAPH:" paragraph)
+    (let [words-raw  (.split paragraph #" ")
+          lines (model/execute words-raw page-width)]
+      (doseq [line lines]
+        (let [line-formatted (stretch_string line page-width)
+          el (.createElement js/document "div")]
+          ; (println "line:" line-formatted)
+          (.appendChild target-el el)
+          (set! (.-innerText el) line-formatted)
+          )))
+    )
+  )
 
 
 ;; remove listeners from text area
@@ -32,10 +70,10 @@
 
 ;; add keyup listner to text-el
  (.addEventListener (get-text-el) "keyup" (fn [] ;; TODO only characters, not f.e. arrows
-  (model/execute target-el get-text page-width)
+  (execute target-el get-text page-width)
   ))
 
-(model/execute target-el get-text page-width)
+(execute target-el get-text page-width)
 
 
 (comment
