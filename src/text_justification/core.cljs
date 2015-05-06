@@ -31,23 +31,24 @@
 
 (defn text_justification[words page_width]
   (if (empty? words) [0.0 []]
-  (reduce (fn[acc word_id]
-    (let [ prev_ugliness (first acc) line (subvec words 0 word_id) rest_words (subvec words word_id)
-      sub_problem_solution (text_justification rest_words page_width)
-      ugliness (+ (badness line page_width) (first sub_problem_solution)) ; combined ugliness (line now + all lines under)
-      solution_proposal (cons line (second sub_problem_solution))]
-      (if (< ugliness prev_ugliness) [ugliness solution_proposal] acc))
-    ) [js/Infinity []] (map inc (range (count words))) )))
-
-;; TODO paragraphs
+    (reduce ( fn
+      [acc word_id]
+      (let [line (subvec words 0 word_id) rest_words (subvec words word_id)
+            sub_problem_solution (text_justification rest_words page_width)
+            ugliness (+ (badness line page_width) (first sub_problem_solution))
+            solution_proposal (cons line (second sub_problem_solution))]
+        ; (print "sub" line "|words in line" (count words))
+        (if (< ugliness (first acc)) [ugliness solution_proposal] acc)))
+    [js/Infinity []]
+    (map inc (range (count words))) )))
 
 (defn stretch_string [line max_width]
-  (let [ str_len (count line)
-    char_count (count_chars line) ;; total characters in provided string
-    chars_left (- max_width char_count) ;; chars left in line
-    spaces_per_break_f (float (/ chars_left (dec str_len)))
-    spaces_per_break_i (int spaces_per_break_f)
-    extra_space_every_X_words (/ 1 (- spaces_per_break_f spaces_per_break_i))]
+  (let [str_len (count line)
+        char_count (count_chars line) ;; total characters in provided string
+        chars_left (- max_width char_count) ;; chars left in line
+        spaces_per_break_f (float (/ chars_left (dec str_len)))
+        spaces_per_break_i (int spaces_per_break_f)
+        extra_space_every_X_words (/ 1 (- spaces_per_break_f spaces_per_break_i))]
     ; (if (> char_count max_width) ;; TODO restore this
       ; (throw (Exception. "Could not stretch string, it is already too long")))
     (second (reduce (fn [acc e] ;; run reduce and take second component
@@ -60,37 +61,59 @@
       [1 ""] line))
 ))
 
+(defn prepare-word "remove whitespaces, split word if it is too long" [max-len word-raw]
+  (let [word (gstring/trim word-raw) len (count word)]
+    (cond
+      (<= max-len 0) word
+      (= len 0) space-char
+      (<= len max-len) word
+      ;;:else (str (.substring word 0 max-len) " _" (prepare-word max-len (.substring word max-len)))) ;; TODO return list and then flatten
+      :else [(.substring word 0 max-len) (str " -" (prepare-word max-len (.substring word max-len)))] ;; TODO return list and then flatten
+    )))
+; (println "norm:" (prepare-word 3 "abc"))
+; (println "trim:" (prepare-word 3 "  abc  "))
+; (println "long:" (prepare-word 2 "abc"))
+; (println "test:" (prepare-word 11 "aaabbbccc111"))
 
-(defn execute []
-  (.log js/console "Execute !!!")
+(defn execute [target-el lazy-text page-width]
+  ;; clear target text
   (dom/removeChildren target-el)
 
-  (let [strs (seq (.split (get-text) #" "))
-    justified_lines (second (text_justification strs page-width))]
-    ;;(print ">>" justified_lines)
-    ;;(print "<<" strs)
-    (doseq [line_strs justified_lines]
-      (let [line (stretch_string line_strs page-width)
-        el (.createElement js/document "div")]
-        (println "line:" line)
-        (.appendChild target-el el)
-        (set! (.-innerText el) line)
-        )))
+  ;; paragraphs
+  (doseq [paragraph (seq (.split (lazy-text) "\n"))] ;; TODO if paragraph is empty ? should leave it empty
+    (println "PARAGRAPH:" paragraph)
+    (let [words-raw  (.split paragraph #" ")
+          words (vec (flatten (map #(prepare-word page-width %) words-raw)))
+          ; justified_lines words] ;; debug
+          [_ justified_lines] (text_justification words page-width)]
+      ; (print ">>" words)
+      ; (print "<<" justified_lines)
+      ; (print (type words))
+      (doseq [line_strs justified_lines]
+        (let [line (stretch_string line_strs page-width)
+          el (.createElement js/document "div")]
+          ; (println "line:" line)
+          (.appendChild target-el el)
+          (set! (.-innerText el) line)
+          )))
+    )
   )
 
 
 ;; remove listeners from text area
 (let [ old-node (get-text-el) new-node (.cloneNode old-node true)]
   (.replaceChild (.-parentNode old-node) new-node old-node)
+  (set! (.-value new-node) "Bleh Bleh Bleh Bleh aaabbbccc\n\naaa bbb")
+  ; (set! (.-value new-node) "aaabbbccc111 a")
+  ; (set! (.-value new-node) "aaabbbccc11 -1 a")
   )
 
 ;; add keyup listner to text-el
  (.addEventListener (get-text-el) "keyup" (fn [] ;; TODO only characters, not f.e. arrows
-  (execute)
+  (execute target-el get-text page-width)
   ))
 
-(execute)
-
+(execute target-el get-text page-width)
 
 
 (comment
