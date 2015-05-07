@@ -7,6 +7,9 @@
 
 (enable-console-print!)
 
+;;;; TODO hook up ui
+;;;; TODO tests
+
 (defonce page-width 11)
 (defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
@@ -20,10 +23,10 @@
 
 
 (defn stretch-string
-  "provide word separators between words so that line spans from beginning to end"
-  [line max-width]
-  (let [word-count (count line)
-        char-count (utils/sum-lengths line) ;; total characters in provided string
+  "add separators between words so that line spans from 0 to max-width"
+  [words max-width]
+  (let [word-count (count words)
+        char-count (utils/sum-lengths words) ;; total characters in provided string
         chars-left (- max-width char-count) ;; chars left in line
         spaces-per-break-f (float (/ chars-left (dec word-count)))
         spaces-per-break-i (int spaces-per-break-f)
@@ -36,14 +39,14 @@
           let[space-count
                 (cond
                   (>= word-id word-count) 0 ; happens for last word
-                  (= word-id (dec word-count)) (- max-width (count res) (count word) (count (last line)))
+                  (= word-id (dec word-count)) (- max-width (count res) (count word) (count (last words)))
                   (zero? (mod word-id extra-space-every-X-words)) (inc spaces-per-break-i) ; add one more space the usual
                   :else spaces-per-break-i)
               spaces (apply str (repeat space-count space-char))]
              ; (println word "(" (= word-id (dec word-count)) "):" max-width "-" (count res) "-" (count word))
             [(inc word-id) (str res word spaces)]))
         [1 ""]
-        line)) ))
+        words)) ))
 ; (let [test (stretch-string ["b" "l" "e" "ah"] 15)]
   ; (println "len" (count test) "; " test))
 
@@ -68,11 +71,11 @@
 ;;
 
 (defn line-component [id line]
-  [:div.monospaced id ": " [:span (stretch-string line page-width) ]])
+  [:div id ": " [:span (stretch-string line page-width) ]])
 
 
 (defn text-justified-component []
-  [:div
+  [:div.monospaced
   (for [[id line] (map-indexed vector @model/state)]
     ^{:key id} [line-component id line])])
 

@@ -47,7 +47,7 @@
 ; (prepare-word-test "aaabbbccc111aaabbbccc111aaabbbccc111")
 
 (defn- badness
-  "given line and page width and returns measurement how `pretty` the line is"
+  "given line and page width returns measurement how `pretty` the line is"
   [line page-width]
   (let [total-length (utils/line-length line)]
     (if (> total-length page-width)
@@ -55,7 +55,8 @@
       (utils/exp (- page-width total-length) 3))))
 
 (defn- text-justification-inner
-  "given words to fit and page width returns vector of `pretty` measurement and vector of justified lines"
+  "fits words into lines so that whole text looks pretty
+  @return [`pretty` metric value, [justified lines]]"
   [words page-width]
   (if (empty? words)
     [0.0 []]
