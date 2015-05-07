@@ -76,7 +76,7 @@
   [text separate-paragraphs]
   (if separate-paragraphs
     (seq (.split text "\n"))
-    [(clojure.string/replace text #"\n" "")]
+    [(clojure.string/replace text #"\n" " ")]
     ))
 
 

@@ -15,3 +15,4 @@
   [line]
   (+ (sum-lengths line) (dec (count line)))) ;; characters + spaces_between_words
 
+(defn call-if [predicate f] (fn [e] (if (predicate e) (f e) nil)))

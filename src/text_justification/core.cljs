@@ -7,20 +7,53 @@
 
 (enable-console-print!)
 
-;;;; TODO hook up ui
+;;;; (.log js/console (get-text))
 ;;;; TODO tests
+;;;; TODO mark right margin
 
-(defonce page-width 11)
 (defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
-(defn get-text-el []
-  (dom/getElement "text"))
+(defn get-slider-el   [] (dom/getElement "page-width"))
+(defn get-checkbox-el [] (dom/getElement "preserve-paragraphs"))
+(defn get-text-el     [] (dom/getElement "text"))
 
 (defn get-text "get text to justify as string" []
   (.-value (get-text-el)))
 
-; (.log js/console (get-text))
+(defn notify-model []
+  ; (println "notify")
+  (model/text-justification (get-text) (.-checked (get-checkbox-el)) (.-value (get-slider-el))))
 
+
+;;;;
+;;;; listeners
+;;;;
+
+(defn reload-element
+  "allows for listeners removal"
+  [el]
+  (.replaceChild (.-parentNode el) (.cloneNode el true) el))
+
+(reload-element (get-text-el))
+(reload-element (get-slider-el))
+(reload-element (get-checkbox-el))
+
+(defn char-keypress? [e]
+  ; (.log js/console e)
+  (and
+    (.-which e)
+    (not (.-ctrlKey e)) (not (.-altKey e)) (not (.-metaKey e))
+    (not (contains? #{37 38 39 40} (.-keyCode e))) )) ;; arrows
+
+
+(.addEventListener (get-text-el) "keyup" (utils/call-if char-keypress? notify-model))
+(.addEventListener (.-parentNode (get-slider-el)) "mouseup" notify-model)
+(.addEventListener (get-checkbox-el) "change" notify-model)
+
+
+;;;;
+;;;; view utils
+;;;;
 
 (defn stretch-string
   "add separators between words so that line spans from 0 to max-width"
@@ -51,27 +84,12 @@
   ; (println "len" (count test) "; " test))
 
 
-;; remove listeners from text area
-(let [ old-node (get-text-el) new-node (.cloneNode old-node true)]
-  (.replaceChild (.-parentNode old-node) new-node old-node)
-  )
-
-;; add keyup listner to text-el
-(.addEventListener (get-text-el) "keyup" (fn []
-  ;; TODO only characters, not f.e. arrows
-  (model/text-justification (get-text) true page-width)))
-
-; (model/text-justification (get-text) false page-width)
-; (model/text-justification (get-text) true page-width)
-; (println @model/state)
-
-
 ;;
 ;; react
 ;;
 
 (defn line-component [id line]
-  [:div id ": " [:span (stretch-string line page-width) ]])
+  [:div id ": " [:span (stretch-string line (.-value (get-slider-el))) ]])
 
 
 (defn text-justified-component []
