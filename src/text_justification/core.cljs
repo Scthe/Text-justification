@@ -10,6 +10,7 @@
 ;;;; (.log js/console (get-text))
 ;;;; TODO tests
 ;;;; TODO mark right margin
+;;;; TODO line length should be part of state too
 
 (defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
@@ -88,14 +89,18 @@
 ;; react
 ;;
 
-(defn line-component [id line]
-  [:div id ": " [:span (stretch-string line (.-value (get-slider-el))) ]])
+(defn line-component [id line max-line-length]
+  [:div;;.border-right-themed
+    ;;id ": " ;; line number
+    [:span (stretch-string line max-line-length) ]])
 
 
 (defn text-justified-component []
   [:div.monospaced
-  (for [[id line] (map-indexed vector @model/state)]
-    ^{:key id} [line-component id line])])
+  (let [max-line-length (.-value (get-slider-el))]
+    (for [[id line] (map-indexed vector @model/state)]
+    ^{:key id} [line-component id line max-line-length])
+    )])
 
 
 
@@ -109,3 +114,8 @@
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
 ; ) 
+
+;; (model/text-justification "halo !\nLorem" false 25 )
+;; (model/text-justification "11111222223333344444555556666677777888889999900" false 25 )
+(model/text-justification "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam cursus ornare nunc eu tincidunt." false 25 )
+

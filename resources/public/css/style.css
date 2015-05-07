@@ -26,8 +26,8 @@
 .margin-bottom-huge{  margin-bottom: 5rem; }
 .margin-top-huge{  margin-top: 5rem; }
 
-.min-h-huge{
-  min-height: 400px;
+.min-h-mid{
+  min-height: 200px;
 }
 
 .greyish{
@@ -38,3 +38,6 @@
   font-family: "Ubuntu Mono";
   font-style: normal;
 }
+
+.border-right-themed{ border-right: 1px solid #db5855; }
+.border-right-greyish{ border-right: 1px solid #9e9e9e; }
