@@ -53,9 +53,7 @@
   (let [total-length (utils/line-length line)]
     (if (> total-length page-width)
       js/Infinity
-      (utils/exp (- page-width total-length) 3)))) ;; TODO do not use lib, multiply by hand
-;; (take 8 (repeat "na"))
-;; (println (time (fn..)))
+      (let [a (- page-width total-length)] (* a a a)) )))
 
 
 ;; cache results (memo)
@@ -110,6 +108,7 @@
   (clear-state)
   (doseq [paragraph (prepare-text text separate-paragraphs)]
     ; (println "PARAGRAPH:" paragraph)
+    ; (.profile js.console "text-justification")
     (let [words-raw (.split paragraph #" ")
           words (vec (flatten (map #(prepare-word page-width %) words-raw)))
           justified-text (text-justification-inner words page-width)]
@@ -117,4 +116,5 @@
         ; (.log js/console "state" (count justified-text) ":" justified-text)
         (update-state justified-text)
       )
+    ; (.profileEnd js.console)
   ))
