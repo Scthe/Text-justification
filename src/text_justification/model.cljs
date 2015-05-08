@@ -5,6 +5,7 @@
 
 (enable-console-print!)
 
+;;;; TODO filter out empty words
 
 ;;;;
 ;;;; consts
@@ -52,24 +53,43 @@
   (let [total-length (utils/line-length line)]
     (if (> total-length page-width)
       js/Infinity
-      (utils/exp (- page-width total-length) 3))))
+      (utils/exp (- page-width total-length) 3)))) ;; TODO do not use lib, multiply by hand
+;; (take 8 (repeat "na"))
+;; (println (time (fn..)))
+
+
+;; cache results (memo)
+;; f.e. result for 'justify text after X word is: [lines]'
+(def tj-memo (atom {}))
+(defn- clear-memo [] (reset! tj-memo {}))
+(defn- add-memo   [arg-val return-val] (swap! tj-memo #(assoc % arg-val return-val)))
+(defn- has-memo?  [arg-val] (contains? @tj-memo arg-val))
+(defn- get-memo   [arg-val] (get @tj-memo arg-val))
 
 (defn- text-justification-inner
   "fits words into lines so that whole text looks pretty
   @return [`pretty` metric value, [justified lines]]"
-  [words page-width]
-  (if (empty? words)
-    [0.0 []]
-    (reduce
-      (fn [acc word-id]
-         (let [line (subvec words 0 word-id) rest-words (subvec words word-id)
-               sub-problem-solution (text-justification-inner rest-words page-width)
-               ugliness (+ (badness line page-width) (first sub-problem-solution))
-               solution-proposal (cons line (second sub-problem-solution))]
-          ; (print "sub" line "|words in line" (count words))
-          (if (< ugliness (first acc)) [ugliness solution-proposal] acc)))
-      [js/Infinity []]
-      (map inc (range (count words))) )))
+  ([words page-width]
+    (clear-memo)
+    (second (text-justification-inner words page-width 0)))
+  ([words page-width word-idx]
+    (cond
+      (empty? words) [0.0 []]
+      (has-memo? word-idx) (get-memo word-idx)
+      :else
+        (reduce
+          (fn [acc word-id]
+             (let [line (subvec words 0 word-id) rest-words (subvec words word-id)
+                   next-word-idx (+ word-idx word-id)
+                   [sub-prob-badness sub-prob-lines] (text-justification-inner rest-words page-width next-word-idx)
+                   ugliness (+ (badness line page-width) sub-prob-badness)
+                   solution-proposal (cons line sub-prob-lines)]
+              ; (print "sub" line "|words in line" (count words))
+              (add-memo next-word-idx [sub-prob-badness sub-prob-lines]) ;; write to memo
+              (if (< ugliness (first acc)) [ugliness solution-proposal] acc)))
+          [js/Infinity []]
+          (map inc (range (count words))) )))) ;; TODO (dec (count words)) ?
+
 
 (defn- prepare-text
   "split by paragraphs or treat text as single text flow"
@@ -92,9 +112,9 @@
     ; (println "PARAGRAPH:" paragraph)
     (let [words-raw (.split paragraph #" ")
           words (vec (flatten (map #(prepare-word page-width %) words-raw)))
-          [_ justified-line] (text-justification-inner words page-width)]
+          justified-text (text-justification-inner words page-width)]
         ; (.log js/console "words" (count words) ":" words)
-        ; (.log js/console "state" (count justified-line) ":" justified-line)
-        (update-state justified-line)
+        ; (.log js/console "state" (count justified-text) ":" justified-text)
+        (update-state justified-text)
       )
   ))
