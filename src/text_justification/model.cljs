@@ -4,13 +4,15 @@
 
 (enable-console-print!)
 
+
 ;;;; TODO filter out empty words
 ;;;; TODO precalc badness to hash ?
-;;;; TODO remove has-memo?
+
 
 ;;;;
 ;;;; consts
 ;;;;
+
 (defonce invisible-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
 
@@ -20,12 +22,9 @@
 
 (defonce state (atom []))
 
-(defn- set-state [new-state]
-  (swap! state (fn [] new-state)))
-(defn- clear-state [] (set-state []))
-(defn- update-state [new-lines]
-  (set-state (concat @state new-lines)))
-  ; (println "new state" @state))
+(defn- set-state    [new-state] (swap! state (fn [] new-state)))
+(defn- clear-state  [] (set-state []))
+(defn- update-state [new-lines] (set-state (concat @state new-lines)))
 
 
 ;;;;
@@ -34,8 +33,8 @@
 
 (defn- badness
   "given line and page width returns measurement how `pretty` the line is"
-  [line-lens page-width]
-  (let [total-length (+ (reduce + line-lens) (count line-lens) -1)] ;; remember to count whitespaces
+  [words-lengths page-width]
+  (let [total-length (+ (reduce + words-lengths) (count words-lengths) -1)] ;; count whitespaces too
     (if (> total-length page-width)
       js/Infinity
       (let [a (- page-width total-length)] (* a a a)) )))
@@ -44,35 +43,36 @@
 ;; cache results (memo)
 ;; f.e. result for 'justify text after X word is: [lines]'
 (def tj-memo (atom {}))
+
 (defn- clear-memo [] (reset! tj-memo {}))
 (defn- add-memo   [arg-val return-val] (swap! tj-memo #(assoc % arg-val return-val)))
-(defn- has-memo?  [arg-val] (contains? @tj-memo arg-val))
+(defn- has-memo?  [arg-val] (contains? @tj-memo arg-val)) ;; TODO use let-if instead, to search for value once
 (defn- get-memo   [arg-val] (get @tj-memo arg-val))
 
-(defn- tj-inner ;;; text-justification-inner
+(defn- tj-inner
   "fits words into lines so that whole text looks pretty
-  @return [`pretty` metric value, [justified lines]]"
-  ([word-lens page-width] ;; lens as in lengths, not actual lens
+  @return [`pretty` metric value, [#words in line]]"
+  ([page-width words]
     (clear-memo)
-    (second (tj-inner word-lens page-width 0)))
-  ([word-lens page-width word-idx]
+    (second (tj-inner page-width words 0)))
+  ([page-width words word-idx]
     (cond
-      (empty? word-lens) [0.0 []]
+      (empty? words) [0.0 []]
       (has-memo? word-idx) (get-memo word-idx)
       :else
         (reduce
-          (fn [acc word-id]
-             (let [line-lens (subvec word-lens 0 word-id) rest-words-lengths (subvec word-lens word-id)
-                   next-word-idx (+ word-idx word-id)
-                   [sub-prob-badness sub-prob-lines] (tj-inner rest-words-lengths page-width next-word-idx)
-                   ugliness (+ (badness line-lens page-width) sub-prob-badness)
-                   ;; solution-proposal (cons line sub-prob-lines)]
-                   solution-proposal (cons word-id sub-prob-lines)]
+          (fn [acc comma-placement-idx]
+             (let [line (subvec words 0 comma-placement-idx)
+                   rest-of-text (subvec words comma-placement-idx)
+                   next-word-idx (+ word-idx comma-placement-idx)
+                   [sub-prob-ugliness sub-prob-lines] (tj-inner page-width rest-of-text next-word-idx)
+                   ugliness (+ (badness line page-width) sub-prob-ugliness)
+                   solution-proposal (cons comma-placement-idx sub-prob-lines)]
               ; (print "sub" line "|words in line" (count words))
-              (add-memo next-word-idx [sub-prob-badness sub-prob-lines]) ;; write to memo
+              (add-memo next-word-idx [sub-prob-ugliness sub-prob-lines])
               (if (< ugliness (first acc)) [ugliness solution-proposal] acc)))
           [js/Infinity []]
-          (map inc (range (count word-lens))) )))) ;; TODO (dec (count words)) ?
+          (map inc (range (count words))) )))) ;; TODO (dec (count words)) ?
 
 
 (defn- prepare-text
@@ -102,7 +102,6 @@
 ; (prepare-word-test "aaabbbccc111aaabbbccc111")
 ; (prepare-word-test "aaabbbccc111aaabbbccc111aaabbbccc111")
 
-(defn- word-lens-to-text [])
 ;;;;
 ;;;; public interface
 ;;;;
@@ -119,7 +118,7 @@
           ;;words (vec (filter .blank? (flatten (map #(prepare-word page-width %) words-raw))))
           words (vec (flatten (map #(prepare-word page-width %) words-raw)))
           word-lens (vec (map count words))
-          justified-text (tj-inner word-lens page-width)]
+          justified-text (tj-inner page-width word-lens)]
         ; (.log js/console "words" (count words) ":" words)
         ; (.log js/console "state" (count justified-text) ":" justified-text)
         (update-state
@@ -135,3 +134,5 @@
       )
     (.profileEnd js.console)
   ))
+
+
