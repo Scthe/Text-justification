@@ -5,7 +5,6 @@
 (enable-console-print!)
 
 
-;;;; TODO filter out empty words
 ;;;; TODO precalc badness to hash ?
 
 
@@ -22,10 +21,9 @@
 
 (defonce state (atom []))
 
-(defn- set-state    [new-state] (swap! state (fn [] new-state)))
+(defn- set-state    [new-state] (swap! state (fn [] new-state))) ;; TODO just use reset!
 (defn- clear-state  [] (set-state []))
 (defn- update-state [new-lines] (set-state (concat @state new-lines)))
-
 
 ;;;;
 ;;;; implementation
@@ -75,32 +73,50 @@
           (map inc (range (count words))) )))) ;; TODO (dec (count words)) ?
 
 
+(defn- split-word
+  "Split words that have length > max-len"
+  [max-len word]
+  (let [len (count word)]
+    (if (<= len max-len)
+      [word]
+      (concat
+        [(.substring word 0 max-len)]
+        (split-word max-len (str " -" (.substring word max-len))) ))))
+; (defn split-word-test [str]
+  ; (let [res (split-word 11 str)]
+  ; (println "test(" (count res) ")" res)))
+; (split-word-test "aaabbbccc111")
+; (split-word-test "aaabbbccc111aaabbbccc111")
+; (split-word-test "aaabbbccc111aaabbbccc111aaabbbccc111")
+
+
+(defn- prepare-paragraph
+  [paragraph max-chars-in-line]
+  (-> paragraph
+         gstring/trim
+         (.split #" +")
+         (->> (mapv #(split-word max-chars-in-line %))
+              flatten
+              vec)))
+
 (defn- prepare-text
-  "split by paragraphs or treat text as single text flow"
-  [text separate-paragraphs]
-  (if separate-paragraphs
-    (seq (.split text "\n"))
-    [(clojure.string/replace text #"\n" " ")]
-    ))
+  "Prepare whole text for justification.
+   1) split by paragraphs / treat text as single text flow
+   2) trim words
+   @return vector of lines, where each line is vector of words"
+  [text separate-paragraphs max-chars-in-line]
+  (let [paragraphs (if separate-paragraphs
+                        (seq (.split text "\n"))
+                        [(clojure.string/replace text #"\n" " ")] )]
+      (mapv #(prepare-paragraph % max-chars-in-line) paragraphs) ))
+; (defn prepare-text-test [str]
+  ; (let [res (prepare-text str true 11)]
+  ; (println "pt-test(" (count res) ")" res "\n\t\t" (mapv count res) )))
+; (prepare-text-test " aa ab ")
+; (prepare-text-test "aaabbbccc111aaabbbccc111aaabbbccc111")
+; (prepare-text-test "Lorem ipsum dolor sit amet, consectetur adipiscing elit")
 
 
-(defn- prepare-word
-  "remove whitespaces, split word if it is too long"
-  [max-len word-raw]
-  (let [word (gstring/trim word-raw) len (count word)]
-    (cond
-      (<= max-len 0) [word]
-      (zero? len) [invisible-char]
-      (<= len max-len) [word]
-      :else (concat
-          [(.substring word 0 max-len)]
-          (prepare-word max-len (str " -" (.substring word max-len)))) )))
-; (defn prepare-word-test [str]
-  ; (let [res (prepare-word 11 str)]
-    ; (println "test(" (count res) ")" res)))
-; (prepare-word-test "aaabbbccc111")
-; (prepare-word-test "aaabbbccc111aaabbbccc111")
-; (prepare-word-test "aaabbbccc111aaabbbccc111aaabbbccc111")
 
 ;;;;
 ;;;; public interface
@@ -110,29 +126,24 @@
   "justify text provided as a collection of words to given page width"
   [text separate-paragraphs page-width]
   {:pre [(> page-width 0)]}
+  
   (clear-state)
-  (doseq [paragraph (prepare-text text separate-paragraphs)]
-    ; (println "PARAGRAPH:" paragraph)
-    (.profile js.console "text-justification")
-    (let [words-raw (.split paragraph #" +")
-          ;;words (vec (filter .blank? (flatten (map #(prepare-word page-width %) words-raw))))
-          words (vec (flatten (map #(prepare-word page-width %) words-raw)))
-          word-lens (vec (map count words))
-          justified-text (tj-inner page-width word-lens)]
-        ; (.log js/console "words" (count words) ":" words)
-        ; (.log js/console "state" (count justified-text) ":" justified-text)
-        (update-state
+  (.profile js.console "text-justification")
+  (doseq [words-in-paragraph (prepare-text text separate-paragraphs page-width)]
+    ; (println "PARAGRAPH:" words-in-paragraph)
+    (let [words-lengths (mapv count words-in-paragraph)
+          justified-text (tj-inner page-width words-lengths)]
+       ; (.log js/console "words" (count words) ":" words)
+       ; (.log js/console "state" (count justified-text) ":" justified-text)
+       (update-state
         (second (reduce
-          (fn [[start-word-idx lines-atm] words-in-line]
-            (let [next-word-start-idx (+ start-word-idx words-in-line)
-                  words-in-this-line (subvec words start-word-idx next-word-start-idx)]
+          (fn [[start-word-idx lines-atm] line-words-count]
+            (let [next-word-start-idx (+ start-word-idx line-words-count)
+                  words-in-this-line (subvec words-in-paragraph start-word-idx next-word-start-idx)]
               ; (println words-in-this-line)
-              [next-word-start-idx (conj lines-atm words-in-this-line)]
-              ))
+              [next-word-start-idx (conj lines-atm words-in-this-line)] ))
           [0 []]
-          justified-text)))
-      )
-    (.profileEnd js.console)
-  ))
-
+          justified-text))) ))
+  (.profileEnd js.console)
+  )
 
