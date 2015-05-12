@@ -25,7 +25,7 @@
   ; (println "notify")
   (model/text-justification (get-text) (.-checked (get-checkbox-el)) (.-value (get-slider-el))))
 
-
+(comment
 ;;;;
 ;;;; listeners
 ;;;;
@@ -34,6 +34,10 @@
   "allows for listeners removal"
   [el]
   (.replaceChild (.-parentNode el) (.cloneNode el true) el))
+  ; (if el 
+    ; (.replaceChild (.-parentNode el) (.cloneNode el true) el))
+    ; ())
+  
 
 (reload-element (get-text-el))
 (reload-element (get-slider-el))
@@ -118,4 +122,4 @@
 ;; (model/text-justification "halo !\nLorem" false 25 )
 ;; (model/text-justification "11111222223333344444555556666677777888889999900" false 25 )
 (model/text-justification "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam cursus ornare nunc eu tincidunt." false 25 )
-
+)
