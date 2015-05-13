@@ -49,7 +49,7 @@
 
 (defn- tj-inner
   "fits words into lines so that whole text looks pretty
-  @return [`pretty` metric value, [#words in line]]"
+  @return #words in each line"
   ([page-width words]
     (clear-memo)
     (second (tj-inner page-width words 0)))
@@ -59,15 +59,16 @@
       (has-memo? word-idx) (get-memo word-idx)
       :else
         (reduce
-          (fn [acc comma-placement-idx]
-             (let [line (subvec words 0 comma-placement-idx)
-                   rest-of-text (subvec words comma-placement-idx)
-                   next-word-idx (+ word-idx comma-placement-idx)
-                   [sub-prob-ugliness sub-prob-lines] (tj-inner page-width rest-of-text next-word-idx)
+          (fn [acc newline-placement-idx]
+             (let [line (subvec words 0 newline-placement-idx)
+                   rest-of-text (subvec words newline-placement-idx)
+                   newline-word-idx (+ word-idx newline-placement-idx)
+                   [sub-prob-ugliness sub-prob-lines :as sub-prob-solution]
+                            (tj-inner page-width rest-of-text newline-word-idx)
                    ugliness (+ (badness line page-width) sub-prob-ugliness)
-                   solution-proposal (cons comma-placement-idx sub-prob-lines)]
+                   solution-proposal (cons newline-placement-idx sub-prob-lines)]
               ; (print "sub" line "|words in line" (count words))
-              (add-memo next-word-idx [sub-prob-ugliness sub-prob-lines])
+              (add-memo newline-word-idx sub-prob-solution)
               (if (< ugliness (first acc)) [ugliness solution-proposal] acc)))
           [js/Infinity []]
           (map inc (range (count words))) )))) ;; TODO (dec (count words)) ?
@@ -82,13 +83,6 @@
       (concat
         [(.substring word 0 max-len)]
         (split-word max-len (str " -" (.substring word max-len))) ))))
-; (defn split-word-test [str]
-  ; (let [res (split-word 11 str)]
-  ; (println "test(" (count res) ")" res)))
-; (split-word-test "aaabbbccc111")
-; (split-word-test "aaabbbccc111aaabbbccc111")
-; (split-word-test "aaabbbccc111aaabbbccc111aaabbbccc111")
-
 
 (defn- prepare-paragraph
   [paragraph max-chars-in-line]
@@ -109,13 +103,6 @@
                         (seq (.split text "\n"))
                         [(clojure.string/replace text #"\n" " ")] )]
       (mapv #(prepare-paragraph % max-chars-in-line) paragraphs) ))
-; (defn prepare-text-test [str]
-  ; (let [res (prepare-text str true 11)]
-  ; (println "pt-test(" (count res) ")" res "\n\t\t" (mapv count res) )))
-; (prepare-text-test " aa ab ")
-; (prepare-text-test "aaabbbccc111aaabbbccc111aaabbbccc111")
-; (prepare-text-test "Lorem ipsum dolor sit amet, consectetur adipiscing elit")
-
 
 
 ;;;;

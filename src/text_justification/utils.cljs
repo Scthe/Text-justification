@@ -13,6 +13,6 @@
 (defn line-length
   "given list of words return chars count"
   [line]
-  (+ (sum-lengths line) (dec (count line)))) ;; characters + spaces_between_words
+  (+ (sum-lengths line) (count line) -1)) ;; characters + spaces_between_words
 
 (defn call-if [predicate f] (fn [e] (if (predicate e) (f e) nil)))

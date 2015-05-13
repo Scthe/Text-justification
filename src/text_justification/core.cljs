@@ -8,9 +8,8 @@
 (enable-console-print!)
 
 ;;;; (.log js/console (get-text))
-;;;; TODO tests
-;;;; TODO mark right margin
-;;;; TODO line length should be part of state too
+;;;; TODO slider knob value is not visible when is overlayed over `Text width` label
+;;;; TODO display function produces sometimes weird results
 
 (defonce ^:const SPACE-CHAR (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
@@ -70,8 +69,7 @@
         spaces-per-break-f (float (/ chars-left (dec word-count)))
         spaces-per-break-i (int spaces-per-break-f)
         extra-space-every-X-words (/ 1 (- spaces-per-break-f spaces-per-break-i))]
-    ; (if (> char-count max-width) ;; TODO restore this
-      ; (throw (Exception. "Could not stretch string, it is already too long")))
+    {:pre [(> max-width char-count)]}
     (second
       (reduce
         (fn [[word-id res] word](
@@ -95,17 +93,17 @@
 ;;
 
 (defn line-component [id line max-line-length]
-  [:div;;.border-right-themed
+  [:div
     ;;id ": " ;; line number
     [:span (stretch-string line max-line-length) ]])
 
 
 (defn text-justified-component []
   [:div.monospaced
-  (let [max-line-length (.-value (get-slider-el))]
-    (for [[id line] (map-indexed vector @model/state)]
-    ^{:key id} [line-component id line max-line-length])
-    )])
+    (let [max-line-length (.-value (get-slider-el))]
+      (for [[id line] (map-indexed vector @model/state)]
+      ^{:key id} [line-component id line max-line-length])
+      )])
 
 
 
