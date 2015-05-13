@@ -21,7 +21,7 @@
 
 (defonce state (atom []))
 
-(defn- set-state    [new-state] (swap! state (fn [] new-state))) ;; TODO just use reset!
+(defn- set-state    [new-state] (reset! state new-state))
 (defn- clear-state  [] (set-state []))
 (defn- update-state [new-lines] (set-state (concat @state new-lines)))
 
