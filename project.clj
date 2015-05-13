@@ -2,7 +2,7 @@
   :description "FIXME: write this!"
   :url "http://example.com/FIXME"
   :license {:name "MIT License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+            :url "http://www.eclipse.org/legal/epl-v10.html"} ;; TODO change licence url
 
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-3211"]
@@ -17,11 +17,10 @@
   :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
   
   :cljsbuild {
-    :builds [{:id "dev"
+    :test-commands {"test" ["phantomjs" "phantom/unit-test.js" "phantom/unit-test.html"]}
+    :builds {:dev {
               :source-paths ["src"]
-              
               :figwheel { :on-jsload "text-justification.core/on-js-reload" }
-
               :compiler {:main text-justification.core
                          :asset-path "js/compiled/out"
                          :output-to "resources/public/js/compiled/text_justification.js"
@@ -30,12 +29,18 @@
                          :source-map true
                          :source-map-timestamp true
                          :cache-analysis true }}
-             {:id "min"
+             :test {
+              :source-paths ["src" "test"]
+              :compiler {
+                         :output-to "target/testable.js"
+                         :optimizations :whitespace
+                         :pretty-print true}}
+             :min {
               :source-paths ["src"]
               :compiler {:output-to "resources/public/js/compiled/text_justification.js"
-                         :main text-justification.core                         
+                         :main text-justification.core
                          :optimizations :advanced
-                         :pretty-print false}}]}
+                         :pretty-print false}}}}
 
   :figwheel {
              ;; :http-server-root "public" ;; default and assumes "resources" 

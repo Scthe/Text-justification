@@ -12,11 +12,12 @@
 ;;;; TODO mark right margin
 ;;;; TODO line length should be part of state too
 
-(defonce space-char (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
+(defonce ^:const SPACE-CHAR (gstring/unescapeEntities "&nbsp;")) ;; \u00A0 ?
 
-(defn get-slider-el   [] (dom/getElement "page-width"))
-(defn get-checkbox-el [] (dom/getElement "preserve-paragraphs"))
-(defn get-text-el     [] (dom/getElement "text"))
+(defn get-result-view-el [] (dom/getElement "justified-text"))
+(defn get-slider-el      [] (dom/getElement "page-width"))
+(defn get-checkbox-el    [] (dom/getElement "preserve-paragraphs"))
+(defn get-text-el        [] (dom/getElement "text"))
 
 (defn get-text "get text to justify as string" []
   (.-value (get-text-el)))
@@ -31,13 +32,11 @@
 ;;;;
 
 (defn reload-element
-  "allows for listeners removal"
-  [el]
-  (.replaceChild (.-parentNode el) (.cloneNode el true) el))
-
-(reload-element (get-text-el))
-(reload-element (get-slider-el))
-(reload-element (get-checkbox-el))
+  "make element reloadable"
+  [el listener-bind]
+  (let [new-el (.cloneNode el true)]
+    (.replaceChild (.-parentNode el) new-el el)
+    (listener-bind new-el) ))
 
 (defn char-keypress? [e]
   ; (.log js/console e)
@@ -47,9 +46,15 @@
     (not (contains? #{37 38 39 40} (.-keyCode e))) )) ;; arrows
 
 
-(.addEventListener (get-text-el) "keyup" (utils/call-if char-keypress? notify-model))
-(.addEventListener (.-parentNode (get-slider-el)) "mouseup" notify-model)
-(.addEventListener (get-checkbox-el) "change" notify-model)
+(if-let [el (get-text-el)]
+  (reload-element el
+    #(.addEventListener % "keyup" (utils/call-if char-keypress? notify-model))) )
+(if-let [el (get-slider-el)]
+  (reload-element el
+    #(.addEventListener (.-parentNode %) "mouseup" notify-model)) )
+(if-let [el (get-checkbox-el)]
+  (reload-element el
+    #(.addEventListener % "change" notify-model)) )
 
 
 ;;;;
@@ -76,7 +81,7 @@
                   (= word-id (dec word-count)) (- max-width (count res) (count word) (count (last words)))
                   (zero? (mod word-id extra-space-every-X-words)) (inc spaces-per-break-i) ; add one more space the usual
                   :else spaces-per-break-i)
-              spaces (apply str (repeat space-count space-char))]
+              spaces (apply str (repeat space-count SPACE-CHAR))]
              ; (println word "(" (= word-id (dec word-count)) "):" max-width "-" (count res) "-" (count word))
             [(inc word-id) (str res word spaces)]))
         [1 ""]
@@ -105,8 +110,8 @@
 
 
 ;; place react component
-(reagent/render-component [text-justified-component]
-                          (. js/document (getElementById "justified-text")))
+(if-let [el (get-result-view-el)]
+  (reagent/render-component [text-justified-component] el))
 
 
 ; (defn on-js-reload []
@@ -118,4 +123,3 @@
 ;; (model/text-justification "halo !\nLorem" false 25 )
 ;; (model/text-justification "11111222223333344444555556666677777888889999900" false 25 )
 (model/text-justification "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam cursus ornare nunc eu tincidunt." false 25 )
-
