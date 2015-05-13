@@ -26,8 +26,8 @@ page.open(url, function (status) {
         return window["test-failures"];
     });
 
-    if (failures == 0) {
-        console.log("Tests succeeded.")
+    if (failures === 0) {
+        console.log("Tests succeeded.");
     }
     else {
         console.log("*** Tests failed! ***");
