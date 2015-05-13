@@ -52,7 +52,29 @@
     (is (= 1 (count (model/split-word 2 "a"))))
     (is (= 1 (count (model/split-word 13 "aaa___aaa___")))) ))
 
+(deftest prepare-paragraph
+  (testing "ignores multiple spaces"
+    (is (= 2 (count (model/prepare-paragraph "  12  34  " 10)))) )
+  (testing "returns vector"
+    (is (= cljs.core/PersistentVector (type (model/prepare-paragraph "a" 2)))) )
+  (testing "splits words that are too long"
+    (is (= 3 (count (model/prepare-paragraph "aaa___aaa__" 5)))) ;; "aaa__", " -_aa", " -a__" 
+    (is (= 6 (count (model/prepare-paragraph "aaa___aaa__ aaa___aaa__" 5)))) )
+  (testing "common cases"
+    (is (= ["a"] (model/prepare-paragraph "a" 40)))
+    (is (= ["blah" "blah" "blah" "blah" "reallylongword"] (model/prepare-paragraph "blah blah blah blah reallylongword" 14))) ))
 
-;; prepare-paragraph
-;; prepare-text
-;; text-justification
+(deftest prepare-text
+  (testing "splits paragraphs"
+    (is (= 1 (count (model/prepare-text "12 34" true 10))))
+    (is (= 2 (count (model/prepare-text "1\n2" true 10))))
+    (is (= 3 (count (model/prepare-text "1\n2\n" true 10))))
+    (is (= 3 (count (model/prepare-text "1\n2\n3" true 10)))) )
+  (testing "does not split paragraphs"
+    (is (= 1 (count (model/prepare-text "12 34" false 10))))
+    (is (= 1 (count (model/prepare-text "1\n2" false 10))))
+    (is (= 1 (count (model/prepare-text "1\n2\n" false 10))))
+    (is (= 1 (count (model/prepare-text "1\n2\n3" false 10)))) ))
+
+
+;; TODO test text-justification
