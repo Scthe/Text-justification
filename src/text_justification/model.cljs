@@ -6,6 +6,7 @@
 
 
 ;;;; TODO precalc badness to hash ?
+;;;; TODO profile usage of type hinting
 
 
 ;;;;
@@ -50,7 +51,7 @@
 (defn- tj-inner
   "fits words into lines so that whole text looks pretty
   @return #words in each line"
-  ([page-width words]
+  ([page-width words] ;; NOTE: dynamic dispatching does not hurt performance here. Curious..
     (clear-memo)
     (second (tj-inner page-width words 0)))
   ([page-width words word-idx]
