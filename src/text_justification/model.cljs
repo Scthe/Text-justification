@@ -116,7 +116,7 @@
   {:pre [(> page-width 0)]}
   
   (clear-state)
-  (.profile js.console "text-justification")
+  ;; (.profile js.console "text-justification")
   (doseq [words-in-paragraph (prepare-text text separate-paragraphs page-width)]
     ; (println "PARAGRAPH:" words-in-paragraph)
     (let [words-lengths (mapv count words-in-paragraph)
@@ -132,6 +132,6 @@
               [next-word-start-idx (conj lines-atm words-in-this-line)] ))
           [0 []]
           justified-text))) ))
-  (.profileEnd js.console)
+  ;; (.profileEnd js.console)
   )
 
