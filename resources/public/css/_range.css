@@ -17,11 +17,14 @@ input[type=range] + .thumb {
 input[type=range] + .thumb .value {
   position: relative;
   left:-15px;
-  display: block;
+  /*display: block;*/
   width: 30px;
+  height: 30px;
   text-align: center;
   color: #db5855;
   font-size: 0;
+  background-color: rgba(255,255,255,0.8);
+  border-radius: 50%;
 }
 
 input[type=range] + .thumb.active .value {
@@ -32,6 +35,9 @@ input[type=range]:focus {
   outline: none;
 }
 
+/*
+ * browser spec.
+ */
 
 /* webkit */
 input[type=range]{

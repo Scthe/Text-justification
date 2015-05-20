@@ -1,51 +1,54 @@
 $(function() {
-  var range_type = 'input[type=range]';
-  var range_wrapper = '.range-field';
-  var range_mousedown = false;
+  var rangeType = 'input[type=range]',
+    rangeWrapper = '.range-field',
+    rangeMousedown = false,
+    thumbHTMLStr = '<span class="thumb"><span class="value center"></span></span>';
 
-  $(range_type).each(function() {
-    var thumb = $('<span class="thumb"><span class="value center"></span></span>');
+  $(rangeType).each(function() {
+    var thumb = $(thumbHTMLStr);
     $(this).after(thumb);
   });
 
-  $(document).on("mousedown", range_wrapper, function(e) {
-    var thumb = $(this).children('.thumb');
-    if (thumb.length <= 0) {
-      thumb = $('<span class="thumb"><span class="value center"></span></span>');
-      $(this).append(thumb);
+  $(document).on("mousedown", rangeWrapper, function(e) {
+    rangeMousedown = true;
+    updateThumb(e, this);
+  });
+
+  $(document).on("mousemove", rangeWrapper, function(e) {
+    if (rangeMousedown) {
+      updateThumb(e, this);
     }
-    range_mousedown = true;
-    $(this).addClass('active');
-    var left = e.pageX - $(this).offset().left;
-    var width = $(this).outerWidth();
+  });
+
+  $(document).on("mouseup", rangeWrapper, function() {
+    rangeMousedown = false;
+    $(this).children('.thumb').removeClass('active');
+    console.log("out > " + $(this).children('input[type=range]').val());
+  });
+
+  $(document).on("mouseout", rangeWrapper, function() {
+    if (!rangeMousedown) {
+      $(this).children('.thumb').removeClass('active');
+    }
+  });
+
+  function updateThumb(event, parentEl) {
+    var thumb = $(parentEl).children('.thumb');
+    if (thumb.length <= 0) {
+      thumb = $(thumbHTMLStr);
+      $(parentEl).append(thumb);
+    }
+
+    var left = event.pageX - $(parentEl).offset().left,
+      width = $(parentEl).outerWidth(),
+      value = $(parentEl).children('input[type=range]').val();
     left = Math.min(Math.max(0, left), width);
     thumb.addClass('active').css('left', left);
-    thumb.find('.value').html($(this).children('input[type=range]').val());
-  });
+    thumb.find('.value').html(value);
 
-  $(document).on("mouseup", range_wrapper, function() {
-    range_mousedown = false;
-    $(this).removeClass('active');
-    // console.log("> "+$(this).children('input[type=range]').val());
-  });
+    // console.log(event)
+    // console.log(parentEl)
+    // console.log(value);
+  }
 
-  $(document).on("mousemove", range_wrapper, function(e) {
-    var thumb = $(this).children('.thumb');
-    if (range_mousedown) {
-      var left = e.pageX - $(this).offset().left,
-        width = $(this).outerWidth(),
-        value = $(this).children('input[type=range]').val();
-      // console.log(value);
-      left = Math.min(Math.max(0, left), width);
-      thumb.addClass('active').css('left', left);
-      thumb.find('.value').html(value);
-    }
-  });
-
-  $(document).on("mouseout", range_wrapper, function() {
-    if (!range_mousedown) {
-      var thumb = $(this).children('.thumb');
-      thumb.removeClass('active');
-    }
-  });
 });
