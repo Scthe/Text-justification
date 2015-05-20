@@ -1,8 +1,8 @@
 (defproject text-justification "0.1.0-SNAPSHOT"
   :description "FIXME: write this!"
-  :url "http://example.com/FIXME"
+  :url "http://scthe.github.io/Text-justification"
   :license {:name "MIT License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"} ;; TODO change licence url
+            :url "https://raw.githubusercontent.com/Scthe/Text-justification/master/LICENSE"}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-3211"]
